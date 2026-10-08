@@ -1,0 +1,5 @@
+# dbt 1.11 with the current dbt-sqlite adapter. Use Python 3.13 (dbt-core 1.11 does not support 3.14 yet).
+# The lower bounds matter: without them pip could silently fall back to the
+# old dbt-sqlite 1.4.0, which only works with an old, unsupported dbt-core.
+dbt-core>=1.11.15
+dbt-sqlite>=1.10.0

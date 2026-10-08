@@ -1,0 +1,5 @@
+# Virtual environment and files Python and pytest create when they run
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/

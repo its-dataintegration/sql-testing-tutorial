@@ -1,0 +1,3 @@
+# Latest pytest. The lower bound is the newest release at the time of writing;
+# pip installs the newest available that is at least this.
+pytest>=9.1.1

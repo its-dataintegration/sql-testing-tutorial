@@ -1,0 +1,57 @@
+# --- Secrets and credentials: never commit these ---------------------------
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+id_rsa*
+id_ed25519*
+*.secret
+*.secrets
+secrets.*
+credentials*.json
+service-account*.json
+.aws/
+.ssh/
+.netrc
+
+# --- Generated databases (rebuild with: python3 load_seed.py) ----------------
+# The data comes from school_seed.sql, which is committed.
+*.sqlite3
+*.sqlite
+*.db
+*.sqlite3-journal
+*.sqlite3-wal
+*.sqlite3-shm
+*.db-journal
+*.db-wal
+*.db-shm
+
+# --- Python ------------------------------------------------------------------
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.cache/
+*.egg-info/
+build/
+dist/
+
+# --- dbt (see also dbt_test/.gitignore) --------------------------------------
+target/
+dbt_packages/
+logs/
+
+# --- Editors, OS and temporary files -----------------------------------------
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+*.tmp
+*.log

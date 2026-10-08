@@ -1,0 +1,12 @@
+# Virtual environment
+.venv/
+
+# Files dbt creates when it runs (safe to delete)
+target/
+dbt_packages/
+logs/
+.user.yml
+
+# profiles.yml IS committed on purpose: it only holds the path to the SQLite file and no credentials.
+# If you ever add a database that needs a password or token, keep it out of profiles.yml:
+# read it with {{ env_var('NAME') }} and set the variable in your shell or in a .env file (ignored by git).

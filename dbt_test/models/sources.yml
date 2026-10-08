@@ -1,0 +1,325 @@
+version: 2
+
+# The tables and views of school.sqlite3, with the tests that apply to each.
+#
+# Built-in dbt tests:  unique, not_null, accepted_values, relationships
+# Custom tests live in tests/generic/:
+#   row_count_equals, unique_combination, expression_is_true,
+#   is_iso_date, is_hhmm_time, matches_like
+#
+# To add a test, add an entry under the column (or table) it applies to.
+# A test with settings lists them under "arguments:" (dbt warns if they are not nested there).
+
+sources:
+  - name: school
+    schema: main
+    tables:
+
+      - name: departments
+        tests:
+          - row_count_equals:
+              arguments:
+                expected: 5
+        columns:
+          - name: department_id
+            tests: [unique, not_null]
+          - name: code
+            tests: [unique, not_null]
+          - name: name
+            tests: [not_null]
+
+      - name: instructors
+        tests:
+          - row_count_equals:
+              arguments:
+                expected: 10
+        columns:
+          - name: instructor_id
+            tests: [unique, not_null]
+          - name: department_id
+            tests:
+              - not_null
+              - relationships:
+                  arguments:
+                    to: "source('school', 'departments')"
+                    field: "department_id"
+          - name: email
+            tests:
+              - unique
+              - not_null
+              - matches_like:
+                  arguments:
+                    pattern: "_%@_%.edu"
+          - name: title
+            tests:
+              - accepted_values:
+                  arguments:
+                    values: [Lecturer, Assistant Professor, Associate Professor, Professor]
+          - name: hire_date
+            tests: [is_iso_date]
+
+      - name: students
+        tests:
+          - row_count_equals:
+              arguments:
+                expected: 15
+        columns:
+          - name: student_id
+            tests: [unique, not_null]
+          - name: email
+            tests:
+              - unique
+              - not_null
+              - matches_like:
+                  arguments:
+                    pattern: "%@student.school.edu"
+          - name: date_of_birth
+            tests: [is_iso_date]
+          - name: major_dept_id
+            tests:
+              - relationships:
+                  arguments:
+                    to: "source('school', 'departments')"
+                    field: "department_id"
+          - name: advisor_id
+            tests:
+              - relationships:
+                  arguments:
+                    to: "source('school', 'instructors')"
+                    field: "instructor_id"
+          - name: status
+            tests:
+              - not_null
+              - accepted_values:
+                  arguments:
+                    values: [Active, On Leave, Graduated, Withdrawn]
+
+      - name: terms
+        tests:
+          - row_count_equals:
+              arguments:
+                expected: 2
+          - expression_is_true:
+              arguments:
+                expression: "end_date > start_date"
+        columns:
+          - name: term_id
+            tests: [unique, not_null]
+          - name: name
+            tests: [unique, not_null]
+          - name: start_date
+            tests: [is_iso_date]
+          - name: end_date
+            tests: [is_iso_date]
+
+      - name: buildings
+        tests:
+          - row_count_equals:
+              arguments:
+                expected: 3
+        columns:
+          - name: building_id
+            tests: [unique, not_null]
+          - name: code
+            tests: [unique, not_null]
+
+      - name: rooms
+        tests:
+          - row_count_equals:
+              arguments:
+                expected: 8
+          - unique_combination:
+              arguments:
+                columns: [building_id, room_number]
+          - expression_is_true:
+              arguments:
+                expression: "capacity > 0"
+        columns:
+          - name: room_id
+            tests: [unique, not_null]
+          - name: building_id
+            tests:
+              - not_null
+              - relationships:
+                  arguments:
+                    to: "source('school', 'buildings')"
+                    field: "building_id"
+          - name: room_type
+            tests:
+              - accepted_values:
+                  arguments:
+                    values: [Lecture, Lab, Seminar]
+
+      - name: courses
+        tests:
+          - row_count_equals:
+              arguments:
+                expected: 12
+          - unique_combination:
+              arguments:
+                columns: [department_id, course_number]
+          - expression_is_true:
+              arguments:
+                expression: "credits between 1 and 6"
+        columns:
+          - name: course_id
+            tests: [unique, not_null]
+          - name: department_id
+            tests:
+              - not_null
+              - relationships:
+                  arguments:
+                    to: "source('school', 'departments')"
+                    field: "department_id"
+
+      - name: course_prerequisites
+        tests:
+          - row_count_equals:
+              arguments:
+                expected: 8
+          - unique_combination:
+              arguments:
+                columns: [course_id, prereq_id]
+          - expression_is_true:
+              arguments:
+                expression: "course_id <> prereq_id"
+        columns:
+          - name: course_id
+            tests:
+              - relationships:
+                  arguments:
+                    to: "source('school', 'courses')"
+                    field: "course_id"
+          - name: prereq_id
+            tests:
+              - relationships:
+                  arguments:
+                    to: "source('school', 'courses')"
+                    field: "course_id"
+
+      - name: classes
+        tests:
+          - row_count_equals:
+              arguments:
+                expected: 14
+          - unique_combination:
+              arguments:
+                columns: [course_id, term_id, section]
+          - expression_is_true:
+              arguments:
+                expression: "max_enrollment > 0"
+        columns:
+          - name: class_id
+            tests: [unique, not_null]
+          - name: course_id
+            tests:
+              - not_null
+              - relationships:
+                  arguments:
+                    to: "source('school', 'courses')"
+                    field: "course_id"
+          - name: term_id
+            tests:
+              - not_null
+              - relationships:
+                  arguments:
+                    to: "source('school', 'terms')"
+                    field: "term_id"
+          - name: instructor_id
+            tests:
+              - not_null
+              - relationships:
+                  arguments:
+                    to: "source('school', 'instructors')"
+                    field: "instructor_id"
+
+      - name: class_meetings
+        tests:
+          - row_count_equals:
+              arguments:
+                expected: 41
+          - expression_is_true:
+              arguments:
+                expression: "end_time > start_time"
+        columns:
+          - name: meeting_id
+            tests: [unique, not_null]
+          - name: class_id
+            tests:
+              - not_null
+              - relationships:
+                  arguments:
+                    to: "source('school', 'classes')"
+                    field: "class_id"
+          - name: room_id
+            tests:
+              - not_null
+              - relationships:
+                  arguments:
+                    to: "source('school', 'rooms')"
+                    field: "room_id"
+          - name: day_of_week
+            tests:
+              - accepted_values:
+                  arguments:
+                    values: [1, 2, 3, 4, 5]
+                    quote: false
+          - name: start_time
+            tests: [is_hhmm_time]
+          - name: end_time
+            tests: [is_hhmm_time]
+          - name: meeting_type
+            tests:
+              - accepted_values:
+                  arguments:
+                    values: [Lecture, Lab, Discussion]
+
+      - name: enrollments
+        tests:
+          - row_count_equals:
+              arguments:
+                expected: 48
+          - unique_combination:
+              arguments:
+                columns: [student_id, class_id]
+        columns:
+          - name: enrollment_id
+            tests: [unique, not_null]
+          - name: student_id
+            tests:
+              - not_null
+              - relationships:
+                  arguments:
+                    to: "source('school', 'students')"
+                    field: "student_id"
+          - name: class_id
+            tests:
+              - not_null
+              - relationships:
+                  arguments:
+                    to: "source('school', 'classes')"
+                    field: "class_id"
+          - name: enrolled_on
+            tests: [is_iso_date]
+          - name: status
+            tests:
+              - accepted_values:
+                  arguments:
+                    values: [Enrolled, Dropped, Completed, Waitlisted]
+          - name: grade
+            tests:
+              - accepted_values:
+                  arguments:
+                    values: [A, A-, B+, B, B-, C+, C, C-, D, F, P, NP, W, I]
+
+      - name: v_class_roster
+        tests:
+          - expression_is_true:
+              arguments:
+                expression: "instructor is not null and course is not null and student is not null"
+
+      - name: v_student_schedule
+        tests:
+          - expression_is_true:
+              arguments:
+                expression: "day = substr('MonTueWedThuFriSatSun', (day_of_week - 1) * 3 + 1, 3)"

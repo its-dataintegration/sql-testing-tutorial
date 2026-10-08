@@ -1,0 +1,14 @@
+# Points dbt at the SQLite file built by ../load_seed.py.
+# Run dbt from this folder (dbt_test/) so the relative path resolves,
+# or set SCHOOL_DB to an absolute path to test another database.
+school:
+  target: dev
+  outputs:
+    dev:
+      type: sqlite
+      threads: 1
+      database: "database"
+      schema: "main"
+      schemas_and_paths:
+        main: "{{ env_var('SCHOOL_DB', '../school.sqlite3') }}"
+      schema_directory: "{{ env_var('DBT_SCHEMA_DIR', 'target') }}"
